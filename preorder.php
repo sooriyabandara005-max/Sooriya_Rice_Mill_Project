@@ -1,0 +1,11 @@
+<?php
+session_start(); require_once "includes/db.php"; require_once "includes/functions.php"; require_login();
+$products=$pdo->query("SELECT * FROM rice_products WHERE active=1")->fetchAll();
+$selected=(int)($_GET["product"]??0); $error="";
+if($_SERVER["REQUEST_METHOD"]==="POST"){
+    $product=(int)($_POST["product_id"]??0); $qty=(int)($_POST["quantity"]??0); $phone=trim($_POST["phone"]??""); $address=trim($_POST["address"]??"");
+    if($product<1 || $qty<1 || $qty>1000 || $phone==="" || $address==="") $error="Please complete all fields correctly.";
+    else { $s=$pdo->prepare("INSERT INTO preorders(user_id,product_id,quantity,phone,address,status) VALUES(?,?,?,?,?,?)"); $s->execute([$_SESSION["user_id"],$product,$qty,$phone,$address,"Pending"]); flash("success","Your pre-order was submitted successfully."); header("Location: dashboard.php"); exit; }
+}
+?>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pre-order | Sooriya</title><link rel="stylesheet" href="css/style.css"></head><body><?php include "includes/header.php"; ?><main class="form-page"><div class="form-card wide"><p class="eyebrow">RICE PRE-ORDER</p><h1>Reserve your rice</h1><p>Fill in your details. Our team can contact you to confirm the order.</p><?php if($error): ?><div class="alert error"><?php echo e($error); ?></div><?php endif; ?><form method="post"><label>Rice type<select name="product_id" required><option value="">Select rice</option><?php foreach($products as $p): ?><option value="<?php echo $p["id"]; ?>" <?php echo $selected===$p["id"]?"selected":""; ?>><?php echo e($p["name"]); ?> — Rs. <?php echo number_format($p["price"],2); ?>/kg</option><?php endforeach; ?></select></label><label>Quantity in kilograms<input type="number" name="quantity" min="1" max="1000" required></label><label>Phone number<input name="phone" required maxlength="30"></label><label>Delivery / collection address<textarea name="address" required rows="3"></textarea></label><button class="btn full" type="submit">Submit pre-order ↗</button></form></div></main><?php include "includes/footer.php"; ?></body></html>
